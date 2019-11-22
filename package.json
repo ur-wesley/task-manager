@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node src/index.js",
-    "dev": "nodemon src/index.js -e js,css",
+    "dev": "env-cmd ./config/dev.env nodemon src/index.js",
     "devdb": "/Users/User/mongodb/bin/mongod --dbpath=/Users/User/mongodb-data",
     "devdb1": "/Users/Wesley/mongodb/bin/mongod --dbpath=/Users/Wesley/mongodb-data"
   },
@@ -24,6 +24,7 @@
     "validator": "^12.0.0"
   },
   "devDependencies": {
+    "env-cmd": "^10.0.1",
     "nodemon": "^1.19.4"
   }
 }
