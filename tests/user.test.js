@@ -1,24 +1,9 @@
 const request = require('supertest')
-const jwt = require('jsonwebtoken')
-const mongoose = require('mongoose')
 const app = require('../src/app')
 const User = require('../src/models/user')
+const { userOne, userOneId, setupDatabase } = require('./fixtures/db')
 
-const userOneId = new mongoose.Types.ObjectId()
-const userOne = {
-    _id: userOneId,
-    name: 'UserOne',
-    email: 'userOne@test.test',
-    password: 'TestPassword',
-    tokens: [{
-        token: jwt.sign({ _id: userOneId }, process.env.JWT_SECRET)
-    }]
-}
-
-beforeEach(async () => {
-    await User.deleteMany()
-    await new User(userOne).save()
-})
+beforeEach(setupDatabase)
 
 test('Signup new user', async () => {
     const res = await request(app).post('/users').send({
@@ -75,11 +60,11 @@ test('AuthFail: Get user profile', async () => {
 
 test('Delete user', async () => {
     await request(app)
-    .delete('/users/me')
-    .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
-    .send()
-    .expect(200)
-    
+        .delete('/users/me')
+        .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+        .send()
+        .expect(200)
+
     const user = await User.findById(userOneId)
     expect(user).toBeNull()
 })
@@ -89,4 +74,36 @@ test('AuthFail: Delete user', async () => {
         .delete('/users/me')
         .send()
         .expect(401)
+})
+
+test('Upload avatar image', async () => {
+    await request(app)
+        .post('/users/me/avatar')
+        .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+        .attach('avatar', 'tests/fixtures/logo.png')
+        .expect(200)
+    const user = await User.findById(userOneId)
+    expect(user.avatar).toEqual(expect.any(Buffer))
+})
+
+test('Update user profile', async () => {
+    await request(app)
+        .patch('/users/me')
+        .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+        .send({
+            age: 20
+        })
+        .expect(200)
+    const user = await User.findById(userOneId)
+    expect(user.age).toBe(20)
+})
+
+test('Fail: Update user profile', async () => {
+    await request(app)
+        .patch('/users/me')
+        .set('Authorization', `Bearer ${userOne.tokens[0].token}`)
+        .send({
+            location: 'FailLand'
+        })
+        .expect(400)
 })
